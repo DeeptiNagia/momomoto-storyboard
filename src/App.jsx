@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Film, Image as ImageIcon, FileText, Layout, X, Plus, GripVertical, RotateCcw, ArrowRight, ArrowDown, Sparkles, Save, FolderOpen, Zap, Hash } from 'lucide-react';
+import { Film, Image as ImageIcon, FileText, Layout, X, Plus, GripVertical, RotateCcw, ArrowRight, ArrowDown, Sparkles, Save, FolderOpen, Zap, Hash, Download } from 'lucide-react';
 
 export default function StoryboardTool() {
   const [stage, setStage] = useState('landing');
@@ -20,6 +20,10 @@ export default function StoryboardTool() {
   // NEW: detection mode
   const [detectionMode, setDetectionMode] = useState('auto'); // 'auto' or 'manual'
   const [targetShots, setTargetShots] = useState(20);
+
+  // NEW: high-res PNG export progress
+  const [pngExportProgress, setPngExportProgress] = useState(0);
+  const [pngExportStatus, setPngExportStatus] = useState('');
 
   const fileInputRef = useRef(null);
   const projectFileInputRef = useRef(null);
@@ -456,6 +460,89 @@ export default function StoryboardTool() {
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, 'image/png');
+  };
+
+  // ============ HIGH-RES FRAMES EXPORT (for Runway etc.) ============
+  const exportFramesHighRes = async () => {
+    if (frames.length === 0) { alert('No frames to export.'); return; }
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const sanitize = (s) => (s || '').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const projSlug = sanitize(projectTitle) || 'storyboard';
+
+    const triggerDownload = (blob, filename) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    };
+
+    // If we still have the original video loaded, re-extract at full native resolution.
+    if (videoUrl) {
+      setPngExportStatus('PREPARING VIDEO');
+      setPngExportProgress(0);
+
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
+      video.playsInline = true;
+
+      await new Promise((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error('video load failed'));
+      }).catch(() => {});
+
+      const fullW = video.videoWidth || 1920;
+      const fullH = video.videoHeight || 1080;
+      const canvas = document.createElement('canvas');
+      canvas.width = fullW;
+      canvas.height = fullH;
+      const ctx = canvas.getContext('2d');
+
+      setPngExportStatus(`EXTRACTING AT ${fullW}x${fullH}`);
+
+      for (let i = 0; i < frames.length; i++) {
+        const f = frames[i];
+        await seekTo(video, f.time);
+        await sleep(40); // let the frame settle
+        ctx.drawImage(video, 0, 0, fullW, fullH);
+
+        const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+        const idxTag = String(i + 1).padStart(3, '0');
+        const shotTag = f.shotNumber ? `_SH${String(f.shotNumber).padStart(2, '0')}` : '';
+        const posTag = f.position && f.position !== 'CUSTOM' ? `_${f.position}` : (f.position === 'CUSTOM' ? '_CUSTOM' : '');
+        const filename = `${projSlug}_${idxTag}${shotTag}${posTag}.png`;
+        if (blob) triggerDownload(blob, filename);
+
+        setPngExportProgress(((i + 1) / frames.length) * 100);
+        await sleep(180); // spacing so the browser accepts multiple downloads
+      }
+
+      setPngExportStatus(`DONE · ${frames.length} PNGs AT ${fullW}x${fullH}`);
+      setTimeout(() => { setPngExportStatus(''); setPngExportProgress(0); }, 4000);
+      return;
+    }
+
+    // No original video (e.g. project loaded from file): export the stored frames as-is.
+    setPngExportStatus('NO VIDEO LOADED — EXPORTING STORED FRAMES');
+    setPngExportProgress(0);
+    for (let i = 0; i < frames.length; i++) {
+      const f = frames[i];
+      const blob = await (await fetch(f.dataUrl)).blob();
+      const idxTag = String(i + 1).padStart(3, '0');
+      const shotTag = f.shotNumber ? `_SH${String(f.shotNumber).padStart(2, '0')}` : '';
+      const posTag = f.position && f.position !== 'CUSTOM' ? `_${f.position}` : '';
+      triggerDownload(blob, `${projSlug}_${idxTag}${shotTag}${posTag}.jpg`);
+      setPngExportProgress(((i + 1) / frames.length) * 100);
+      await sleep(180);
+    }
+    setPngExportStatus('DONE · re-upload the video for full resolution');
+    setTimeout(() => { setPngExportStatus(''); setPngExportProgress(0); }, 5000);
   };
 
   const reset = () => {
@@ -1451,6 +1538,32 @@ export default function StoryboardTool() {
               </h1>
             </div>
 
+            {pngExportStatus && (
+              <div style={{
+                marginBottom: '32px',
+                padding: '20px 24px',
+                border: `1px solid ${red}`,
+                background: 'rgba(196, 66, 50, 0.06)'
+              }}>
+                <div style={{
+                  fontFamily: '"Courier New", monospace',
+                  fontSize: '11px',
+                  letterSpacing: '2.5px',
+                  color: red,
+                  fontWeight: 700,
+                  marginBottom: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between'
+                }}>
+                  <span>{pngExportStatus}</span>
+                  <span>{Math.round(pngExportProgress)}%</span>
+                </div>
+                <div style={{ height: '4px', background: '#d8d2c4', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', inset: 0, width: `${pngExportProgress}%`, background: red, transition: 'width 0.2s' }} />
+                </div>
+              </div>
+            )}
+
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
@@ -1461,8 +1574,9 @@ export default function StoryboardTool() {
               {[
                 { num: '01', icon: FileText, title: 'PDF', desc: 'Print-ready A4. Two frames per row, shot info inline.', action: exportPDF, label: 'OPEN PRINT' },
                 { num: '02', icon: ImageIcon, title: 'POSTER', desc: 'Single shareable image. Three-column grid, oversized title.', action: exportPoster, label: 'DOWNLOAD PNG' },
-                { num: '03', icon: Save, title: 'PROJECT', desc: 'Download as a .momoboard file. Re-open later or share with a collaborator.', action: downloadProject, label: 'SAVE .MOMOBOARD' },
-                { num: '04', icon: Layout, title: 'WEB', desc: 'Stay in the editor. Auto-save keeps everything in this browser.', action: () => setStage('edit'), label: 'BACK TO EDITOR' },
+                { num: '03', icon: Download, title: 'FRAMES', desc: 'Full-resolution PNG of every frame, named by shot. Drop straight into Runway as first / last frame.', action: exportFramesHighRes, label: 'EXPORT HI-RES', badge: 'AI-READY' },
+                { num: '04', icon: Save, title: 'PROJECT', desc: 'Download as a .momoboard file. Re-open later or share with a collaborator.', action: downloadProject, label: 'SAVE .MOMOBOARD' },
+                { num: '05', icon: Layout, title: 'WEB', desc: 'Stay in the editor. Auto-save keeps everything in this browser.', action: () => setStage('edit'), label: 'BACK TO EDITOR' },
               ].map((opt, i) => (
                 <div
                   key={i}
@@ -1477,11 +1591,28 @@ export default function StoryboardTool() {
                     minHeight: '320px',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'space-between'
+                    justifyContent: 'space-between',
+                    background: opt.badge ? 'rgba(196, 66, 50, 0.05)' : 'transparent'
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = ink; e.currentTarget.style.color = paper; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = ink; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = opt.badge ? 'rgba(196, 66, 50, 0.05)' : 'transparent'; e.currentTarget.style.color = ink; }}
                 >
+                  {opt.badge && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '16px',
+                      right: '16px',
+                      background: red,
+                      color: paper,
+                      fontFamily: '"Courier New", monospace',
+                      fontSize: '8px',
+                      letterSpacing: '1.5px',
+                      fontWeight: 700,
+                      padding: '4px 8px'
+                    }}>
+                      {opt.badge}
+                    </div>
+                  )}
                   <div>
                     <div style={{
                       fontSize: '88px',
