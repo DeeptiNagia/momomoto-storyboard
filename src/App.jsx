@@ -13,6 +13,7 @@ export default function StoryboardTool() {
   const [scrubTime, setScrubTime] = useState(0);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [projectTitle, setProjectTitle] = useState('Untitled');
   const [autoSaveStatus, setAutoSaveStatus] = useState('');
   const [hasSavedProject, setHasSavedProject] = useState(false);
@@ -31,8 +32,9 @@ export default function StoryboardTool() {
 
   // ============ AUTO-SAVE ============
   const STORAGE_KEY = 'momomoto-storyboard-autosave';
+  const EMAIL_KEY = 'momomoto-storyboard-email';
 
-  // Check for saved project on mount
+  // Check for saved project + remembered email on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -40,6 +42,8 @@ export default function StoryboardTool() {
         const data = JSON.parse(saved);
         if (data.frames && data.frames.length > 0) setHasSavedProject(true);
       }
+      const rememberedEmail = localStorage.getItem(EMAIL_KEY);
+      if (rememberedEmail) setEmail(rememberedEmail);
     } catch (e) { /* ignore */ }
   }, []);
 
@@ -283,18 +287,45 @@ export default function StoryboardTool() {
   };
   const handleDragEnd = () => setDraggedIdx(null);
 
- const handleGateSubmit = async () => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!re.test(email)) { setEmailError('Try again. Real email this time.'); return; }
-    setEmailError('');
+ const submitEmailPing = async (emailToSend) => {
     try {
       await fetch('https://formspree.io/f/xvzyapek', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email, project: projectTitle, frames: frames.length })
+        body: JSON.stringify({ email: emailToSend, project: projectTitle, frames: frames.length })
       });
     } catch (err) { console.error(err); }
+  };
+
+  const handleGateSubmit = async () => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!re.test(email)) { setEmailError('Try again. Real email this time.'); return; }
+    setEmailError('');
+    try {
+      if (rememberMe) localStorage.setItem(EMAIL_KEY, email);
+      else localStorage.removeItem(EMAIL_KEY);
+    } catch { /* ignore */ }
+    await submitEmailPing(email);
     setStage('export');
+  };
+
+  // Remembered users skip the gate and go straight to export
+  const startExport = () => {
+    let remembered = null;
+    try { remembered = localStorage.getItem(EMAIL_KEY); } catch { /* ignore */ }
+    if (remembered) {
+      setEmail(remembered);
+      submitEmailPing(remembered);
+      setStage('export');
+    } else {
+      setStage('gate');
+    }
+  };
+
+  const forgetMe = () => {
+    try { localStorage.removeItem(EMAIL_KEY); } catch { /* ignore */ }
+    setEmail('');
+    setStage('gate');
   };
   const formatTime = (t) => {
     const m = Math.floor(t / 60);
@@ -1196,7 +1227,7 @@ export default function StoryboardTool() {
                     <RotateCcw size={14} /> NEW
                   </button>
                   <button
-                    onClick={() => setStage('gate')}
+                    onClick={startExport}
                     disabled={frames.length === 0}
                     style={{
                       background: red,
@@ -1485,6 +1516,44 @@ export default function StoryboardTool() {
                   {emailError && (
                     <div style={{ color: red, fontSize: '13px', marginBottom: '16px', fontStyle: 'italic' }}>{emailError}</div>
                   )}
+                  <label
+                    onClick={() => setRememberMe(!rememberMe)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      cursor: 'pointer',
+                      marginTop: '8px',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <span style={{
+                      width: '18px',
+                      height: '18px',
+                      border: `1px solid ${rememberMe ? red : dim}`,
+                      background: rememberMe ? red : 'transparent',
+                      color: paper,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      transition: 'all 0.2s'
+                    }}>
+                      {rememberMe ? '✓' : ''}
+                    </span>
+                    <span style={{
+                      fontFamily: '"Courier New", monospace',
+                      fontSize: '10px',
+                      letterSpacing: '2.5px',
+                      color: rememberMe ? paper : dim,
+                      textTransform: 'uppercase',
+                      transition: 'color 0.2s'
+                    }}>
+                      Remember me — skip this next time
+                    </span>
+                  </label>
                   <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                     <button
                       onClick={handleGateSubmit}
@@ -1524,8 +1593,40 @@ export default function StoryboardTool() {
         {stage === 'export' && (
           <main style={{ padding: '32px' }}>
             <div style={{ borderBottom: `2px solid ${ink}`, paddingBottom: '20px', marginBottom: '40px' }}>
-              <div style={{ fontFamily: '"Courier New", monospace', fontSize: '10px', letterSpacing: '2.5px', color: red, marginBottom: '12px' }}>
-                ✓ UNLOCKED · STEP 05 / EXPORT
+              <div style={{
+                fontFamily: '"Courier New", monospace',
+                fontSize: '10px',
+                letterSpacing: '2.5px',
+                marginBottom: '12px',
+                display: 'flex',
+                gap: '16px',
+                flexWrap: 'wrap',
+                alignItems: 'baseline'
+              }}>
+                <span style={{ color: red }}>✓ UNLOCKED · STEP 05 / EXPORT</span>
+                {email && (
+                  <span style={{ color: dim }}>
+                    {email.toUpperCase()}
+                    <button
+                      onClick={forgetMe}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: dim,
+                        fontFamily: '"Courier New", monospace',
+                        fontSize: '10px',
+                        letterSpacing: '2.5px',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        marginLeft: '10px',
+                        padding: 0,
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      Not you? Forget me
+                    </button>
+                  </span>
+                )}
               </div>
               <h1 style={{
                 fontSize: 'clamp(56px, 9vw, 130px)',
