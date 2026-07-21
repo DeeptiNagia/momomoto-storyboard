@@ -1,4 +1,4 @@
-# Sakhi 💜 — period talk, together
+# Behna 💜 — period talk, together
 
 A messaging app prototype (think WhatsApp / Messenger) built as a safe, shame-free space for women to discuss period pains and period concerns. Built with React + Vite.
 

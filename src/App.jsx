@@ -6,11 +6,11 @@ import {
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// Sakhi — a messaging app where women connect.
+// Behna — a messaging app where women connect.
 // Front-end prototype: all data lives in localStorage, replies are simulated.
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = 'sakhi-app-v2'; // v2: period-support retheme — forces fresh seed content
+const STORAGE_KEY = 'behna-app-v1'; // renamed from Sakhi — fresh key so everyone sees the new brand cleanly
 
 const AVATAR_COLORS = ['#B85C8B', '#7C5CB8', '#5C8BB8', '#B8865C', '#5CB88A', '#B85C5C', '#8A5CB8'];
 
@@ -351,13 +351,13 @@ export default function App() {
       <div className="app onboarding">
         <div className="onboarding-card">
           <div className="logo-mark"><Heart size={28} strokeWidth={2.2} /></div>
-          <h1>Sakhi<span className="accent">.</span></h1>
+          <h1>Behna<span className="accent">.</span></h1>
           <p className="tagline">The space to talk about periods — cramps, cycles, and everything nobody told us.</p>
 
           <div className="pledge">
             <div className="pledge-row"><Shield size={16} /><span>A women-only space with zero shame and zero taboo. Every member takes the pledge.</span></div>
             <div className="pledge-row"><EyeOff size={16} /><span>Ask anything anonymously in circles — sensitive questions don't need your name attached.</span></div>
-            <div className="pledge-row"><BadgeCheck size={16} /><span>Verified health mentors (like real gynaecologists) carry a badge — but Sakhi is peer support, not a substitute for a doctor.</span></div>
+            <div className="pledge-row"><BadgeCheck size={16} /><span>Verified health mentors (like real gynaecologists) carry a badge — but Behna is peer support, not a substitute for a doctor.</span></div>
             <div className="pledge-row"><Lock size={16} /><span>Your chats stay on your device in this prototype. Block anyone, anytime.</span></div>
           </div>
 
@@ -540,7 +540,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div className="app-title"><Heart size={20} strokeWidth={2.4} /> Sakhi<span className="accent">.</span></div>
+        <div className="app-title"><Heart size={20} strokeWidth={2.4} /> Behna<span className="accent">.</span></div>
         <button className="icon-btn" onClick={() => showToast('No new notifications — enjoy the quiet 🌙')} aria-label="Notifications">
           <Bell size={19} />
         </button>
@@ -704,7 +704,7 @@ export default function App() {
               <AlertTriangle size={18} />
               <div>
                 <strong>Peer support ≠ medical advice</strong>
-                <p>Sakhi is sisters sharing experiences, and even our verified mentors can't examine you through a screen. Please see a doctor promptly if you have: pain that regularly makes you miss school/work, bleeding through a pad or tampon every hour, periods lasting more than 7 days, fainting or dizziness, or a sudden change in your cycle.</p>
+                <p>Behna is sisters sharing experiences, and even our verified mentors can't examine you through a screen. Please see a doctor promptly if you have: pain that regularly makes you miss school/work, bleeding through a pad or tampon every hour, periods lasting more than 7 days, fainting or dizziness, or a sudden change in your cycle.</p>
               </div>
             </div>
           </div>
@@ -747,7 +747,7 @@ export default function App() {
             </div>
 
             <button className="btn-ghost logout" onClick={resetApp}><LogOut size={15} /> Log out & clear this device</button>
-            <p className="fine-print center">Sakhi prototype · all data stays in your browser</p>
+            <p className="fine-print center">Behna prototype · all data stays in your browser</p>
           </div>
         )}
       </main>
