@@ -10,83 +10,90 @@ import {
 // Front-end prototype: all data lives in localStorage, replies are simulated.
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = 'sakhi-app-v1';
+const STORAGE_KEY = 'sakhi-app-v2'; // v2: period-support retheme — forces fresh seed content
 
 const AVATAR_COLORS = ['#B85C8B', '#7C5CB8', '#5C8BB8', '#B8865C', '#5CB88A', '#B85C5C', '#8A5CB8'];
 
 const seedContacts = [
   {
     id: 'c1', name: 'Priya Sharma', verified: true, online: true,
-    tagline: 'Product designer · Mumbai',
+    tagline: 'Cramp survival expert · heat pad evangelist',
     replies: [
-      "That sounds lovely! Count me in 💜",
-      "Haha yes, exactly what I was thinking!",
-      "Let's plan for the weekend then?",
-      "You always know what to say 😊",
+      "Heat pad + knees to chest. I swear by it 🔥",
+      "Day two is always my worst too. You're not alone 💜",
+      "Ginger tea helped me more than I expected, honestly.",
+      "Rest tonight, okay? The laundry can wait.",
     ],
   },
   {
     id: 'c2', name: 'Ananya Iyer', verified: true, online: false,
-    tagline: 'Founder · Bengaluru',
+    tagline: 'Endo warrior · 6 years since diagnosis',
     replies: [
-      "Just wrapped a call, tell me everything!",
-      "That's a great idea. Want me to intro you to someone?",
-      "Proud of you for asking. That took courage.",
-      "Coffee next week? My treat ☕",
+      "I pushed for a scan for two years before anyone listened. Push.",
+      "Pain that makes you cancel plans every month is NOT normal — worth checking.",
+      "Sending you my gynae's number, she actually listens.",
+      "Some months are just hard. Be soft with yourself 💛",
     ],
   },
   {
     id: 'c3', name: 'Meera Kapoor', verified: false, online: true,
-    tagline: 'New in the city 🌸',
+    tagline: 'Big sister energy · ask me anything',
     replies: [
-      "Thank you so much for the warm welcome!",
-      "I'd love that! I barely know anyone here yet.",
-      "Is the Sunday walking group still on?",
-      "You're so kind, seriously 🥹",
+      "Okay first: that is SO normal, promise 🌸",
+      "I was too scared to ask anyone at your age. Ask me everything.",
+      "Cups take like three cycles to get used to — don't give up yet!",
+      "Irregular in the first few years is really common, truly.",
     ],
   },
   {
     id: 'c4', name: 'Dr. Farah Khan', verified: true, online: false,
-    tagline: 'Pediatrician · Verified mentor',
+    tagline: 'Gynaecologist · Verified health mentor',
     replies: [
-      "Happy to help — that's what this space is for.",
-      "That's completely normal, don't worry.",
-      "Send me the details and I'll take a look tonight.",
-      "Take care of yourself first. Everything else follows.",
+      "Good question — this is exactly what this space is for.",
+      "Mild to moderate cramping is common, but severe pain that disrupts your day deserves a proper check-up.",
+      "Track it for two cycles — dates, pain level, flow — and bring that to your doctor. It changes the conversation.",
+      "Please don't diagnose yourself off the internet at 2am 😄 Note the symptoms and see someone. And keep asking here.",
     ],
   },
 ];
 
 const seedCircles = [
   {
-    id: 'g1', name: 'Mumbai Women in Tech', members: 128, emoji: '💻',
-    about: 'Careers, referrals, and honest advice.',
+    id: 'g1', name: 'Cramps & Pain Relief', members: 214, emoji: '🔥',
+    about: 'What actually helps — remedies, hacks, solidarity.',
     feed: [
-      { author: 'Priya Sharma', text: 'Anyone attending the design meetup at BKC on Friday?' },
-      { author: 'Ananya Iyer', text: 'Hiring two frontend engineers at my startup — DM me, referrals welcome!' },
-      { author: 'Ritu M.', text: 'Just negotiated a 30% raise using the script from last week\'s thread. Thank you all 🙏' },
+      { author: 'Priya Sharma', text: 'Ranking my pain relief: 1) heat pad 2) mild walk (annoyingly, it works) 3) ginger-ajwain tea. What\'s yours?' },
+      { author: 'Ritu M.', text: 'PSA: if painkillers barely touch your cramps every single month, please tell a doctor. I waited way too long.' },
+      { author: 'Sneha P.', text: 'Day 1 club, who\'s with me today 🥲 Hot water bottle and this thread are getting me through.' },
     ],
   },
   {
-    id: 'g2', name: 'New Moms Circle', members: 86, emoji: '🍼',
-    about: 'Zero judgement. All questions welcome.',
+    id: 'g2', name: 'PCOS Support', members: 156, emoji: '🎗️',
+    about: 'Irregular cycles, diagnosis stories, living with PCOS.',
     feed: [
-      { author: 'Dr. Farah Khan', text: 'Reminder: our free Q&A call is this Saturday at 11am.' },
-      { author: 'Sneha P.', text: 'Night three of no sleep. Tell me it gets better 😅' },
+      { author: 'Dr. Farah Khan', text: 'Reminder: our free PCOS Q&A call is this Saturday at 11am. Bring every question, nothing is too small.' },
+      { author: 'Ananya Iyer', text: 'Two years post-diagnosis update: cycles finally regular-ish. It\'s slow, but it does get better. Happy to share what worked.' },
     ],
   },
   {
-    id: 'g3', name: 'Weekend Book Club', members: 42, emoji: '📚',
-    about: 'One book a month, chai included.',
+    id: 'g3', name: 'Endo Warriors', members: 98, emoji: '💛',
+    about: 'Endometriosis — getting heard, getting diagnosed, coping.',
     feed: [
-      { author: 'Meera Kapoor', text: 'Voting for next month closes tonight — it\'s between Lessons in Chemistry and Tomb of Sand!' },
+      { author: 'Ananya Iyer', text: 'If a doctor says "period pain is just like that" and you\'re missing work every month — get a second opinion. That sentence delayed my diagnosis by 4 years.' },
     ],
   },
   {
-    id: 'g4', name: 'Safe Travels ✈️', members: 204, emoji: '🧳',
-    about: 'Solo travel tips, trusted stays, live check-ins.',
+    id: 'g4', name: 'First Periods & Teens', members: 67, emoji: '🌸',
+    about: 'A gentle space for firsts. No question is silly here.',
     feed: [
-      { author: 'Ananya Iyer', text: 'Sharing my vetted homestay list for Himachal — pinned above.' },
+      { author: 'Meera Kapoor', text: 'Starting a thread of things we wish someone had told us at 13. Mine: irregular cycles in the first couple of years are completely normal.' },
+    ],
+  },
+  {
+    id: 'g5', name: 'Cycle, Mood & Sleep', members: 132, emoji: '🌙',
+    about: 'PMS, PMDD, energy dips — tracking the whole cycle.',
+    feed: [
+      { author: 'Ritu M.', text: 'Started tracking mood alongside my cycle and WOW the week-before pattern is real. Anyone else rage-cry at nothing on day 24? 😅' },
     ],
   },
 ];
@@ -94,15 +101,15 @@ const seedCircles = [
 // members + replies used to simulate life inside group chats
 const GROUP_MEMBERS = ['Priya Sharma', 'Ananya Iyer', 'Meera Kapoor', 'Ritu M.', 'Sneha P.', 'Dr. Farah Khan'];
 const GROUP_REPLIES = [
-  'Love this — so glad you posted 💜',
-  'Great question, following this thread 👀',
-  'Yes!! Was hoping someone would bring this up.',
-  "Count me in. DM'ing you!",
-  'Adding my thoughts tonight, but short answer: absolutely.',
-  'This circle is the best. Welcome!',
+  'So glad you asked this — I had the exact same question and was too shy 💜',
+  'Following this thread, I deal with this every cycle 👀',
+  'Heat pad + rest + this circle. That\'s the whole survival kit honestly.',
+  'Same here! You are so not alone in this.',
+  'What helped me: tracking it for two cycles and showing my doctor the notes.',
+  'Sending you the gentlest hug. Day 2 is the worst 🫂',
 ];
 
-const CIRCLE_EMOJIS = ['💜', '💻', '🍼', '📚', '🧳', '🎨', '🏃‍♀️', '🌸', '🎬', '🍲'];
+const CIRCLE_EMOJIS = ['💜', '🔥', '🎗️', '🌸', '🌙', '💧', '🫂', '🍵', '🏃‍♀️', '📚'];
 
 const now = () => new Date().toISOString();
 
@@ -120,15 +127,15 @@ function seedCircleMsgs() {
 function seedMessages() {
   return {
     c1: [
-      { id: 'm1', from: 'them', text: 'Hey! Are you coming to the Sakhi meetup this weekend?', at: now(), read: true },
-      { id: 'm2', from: 'me', text: 'I was just about to ask you the same thing 😄', at: now(), read: true },
-      { id: 'm3', from: 'them', text: 'Perfect, let\'s go together. I\'ll pick you up?', at: now(), read: true },
+      { id: 'm1', from: 'them', text: 'Hey, how are the cramps today? Did the heat pad help last night?', at: now(), read: true },
+      { id: 'm2', from: 'me', text: 'A little better! Still curled up though 🙃', at: now(), read: true },
+      { id: 'm3', from: 'them', text: 'Ugh day 2. Want me to drop off some ginger tea on my way home?', at: now(), read: true },
     ],
     c2: [
-      { id: 'm4', from: 'them', text: 'Saw your note in the founders circle — let\'s talk, I think I can help.', at: now(), read: true },
+      { id: 'm4', from: 'them', text: 'Saw your post in Endo Warriors — I went through exactly this before my diagnosis. Happy to talk whenever you\'re ready.', at: now(), read: true },
     ],
     c3: [
-      { id: 'm5', from: 'them', text: 'Hi! I just moved here and joined through the New in Town circle. Priya said I should say hello 🌸', at: now(), read: false },
+      { id: 'm5', from: 'them', text: 'Hi! Meera here from the First Periods circle 🌸 You mentioned your little sister just started hers — I put together a small starter kit list, want it?', at: now(), read: false },
     ],
     c4: [],
   };
@@ -191,6 +198,7 @@ export default function App() {
   const [nameInput, setNameInput] = useState('');
   const [showNewCircle, setShowNewCircle] = useState(false);
   const [newCircle, setNewCircle] = useState({ name: '', about: '', emoji: '💜' });
+  const [anonPost, setAnonPost] = useState(false);
   const scrollRef = useRef(null);
   const toastTimer = useRef(null);
 
@@ -267,7 +275,7 @@ export default function App() {
     const text = draft.trim();
     if (!text || !circle) return;
     const id = circle.id;
-    const post = { id: `cp-${Date.now()}`, author: 'me', text, at: now() };
+    const post = { id: `cp-${Date.now()}`, author: 'me', anon: anonPost, text, at: now() };
     setState(s => ({ ...s, circleMsgs: { ...s.circleMsgs, [id]: [...(s.circleMsgs[id] || []), post] } }));
     setDraft('');
 
@@ -344,12 +352,13 @@ export default function App() {
         <div className="onboarding-card">
           <div className="logo-mark"><Heart size={28} strokeWidth={2.2} /></div>
           <h1>Sakhi<span className="accent">.</span></h1>
-          <p className="tagline">Where women connect — safely, warmly, on your own terms.</p>
+          <p className="tagline">The space to talk about periods — cramps, cycles, and everything nobody told us.</p>
 
           <div className="pledge">
-            <div className="pledge-row"><Shield size={16} /><span>A women-only space. Every member agrees to our community pledge.</span></div>
-            <div className="pledge-row"><BadgeCheck size={16} /><span>Verified profiles get a badge, and you can choose to chat with verified members only.</span></div>
-            <div className="pledge-row"><Lock size={16} /><span>Your chats stay on your device in this prototype. Block anyone, anytime, no questions asked.</span></div>
+            <div className="pledge-row"><Shield size={16} /><span>A women-only space with zero shame and zero taboo. Every member takes the pledge.</span></div>
+            <div className="pledge-row"><EyeOff size={16} /><span>Ask anything anonymously in circles — sensitive questions don't need your name attached.</span></div>
+            <div className="pledge-row"><BadgeCheck size={16} /><span>Verified health mentors (like real gynaecologists) carry a badge — but Sakhi is peer support, not a substitute for a doctor.</span></div>
+            <div className="pledge-row"><Lock size={16} /><span>Your chats stay on your device in this prototype. Block anyone, anytime.</span></div>
           </div>
 
           <label className="field-label" htmlFor="name">What should we call you?</label>
@@ -456,7 +465,7 @@ export default function App() {
     return (
       <div className="app">
         <header className="chat-header">
-          <button className="icon-btn" onClick={() => { setActiveCircle(null); setCircleTyping(''); }} aria-label="Back"><ChevronLeft size={22} /></button>
+          <button className="icon-btn" onClick={() => { setActiveCircle(null); setCircleTyping(''); setAnonPost(false); }} aria-label="Back"><ChevronLeft size={22} /></button>
           <div className="circle-emoji">{circle.emoji}</div>
           <div className="chat-header-info">
             <div className="chat-header-name">{circle.name}{circle.mine && <span className="mine-tag">your circle</span>}</div>
@@ -481,6 +490,9 @@ export default function App() {
                 {p.author !== 'me' && (
                   <span className="post-author" style={{ color: avatarColor(p.author) }}>{p.author}</span>
                 )}
+                {p.author === 'me' && p.anon && (
+                  <span className="anon-label"><EyeOff size={11} /> posted anonymously — others see "A sister"</span>
+                )}
                 <span className="bubble-text">{p.text}</span>
                 <span className="bubble-meta">{fmtTime(p.at)}</span>
               </div>
@@ -492,17 +504,30 @@ export default function App() {
             </div>
           )}
         </div>
-        <footer className="composer">
-          <input
-            className="composer-input"
-            placeholder={`Message ${circle.name}…`}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') sendCirclePost(); }}
-          />
-          <button className="send-btn" onClick={sendCirclePost} disabled={!draft.trim()} aria-label="Send">
-            <Send size={18} />
-          </button>
+        <footer className="composer-stack">
+          {anonPost && (
+            <div className="anon-banner"><EyeOff size={13} /> Anonymous mode — this message will show as "A sister"</div>
+          )}
+          <div className="composer">
+            <button
+              className={`anon-toggle ${anonPost ? 'on' : ''}`}
+              onClick={() => setAnonPost(a => !a)}
+              aria-label="Toggle anonymous posting"
+              title="Post anonymously"
+            >
+              <EyeOff size={17} />
+            </button>
+            <input
+              className="composer-input"
+              placeholder={anonPost ? 'Ask anonymously…' : `Message ${circle.name}…`}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') sendCirclePost(); }}
+            />
+            <button className="send-btn" onClick={sendCirclePost} disabled={!draft.trim()} aria-label="Send">
+              <Send size={18} />
+            </button>
+          </div>
         </footer>
         {toast && <div className="toast">{toast}</div>}
       </div>
@@ -565,7 +590,7 @@ export default function App() {
 
         {tab === 'circles' && (
           <div className="circle-list">
-            <p className="section-intro">Circles are group chats built around what you care about. Join one — or start your own.</p>
+            <p className="section-intro">Circles are group chats for every part of the cycle — pain, PCOS, endo, firsts, moods. Ask with your name or anonymously. Join one, or start your own.</p>
             {allCircles.map(g => {
               const posts = state.circleMsgs[g.id] || [];
               const last = posts[posts.length - 1];
@@ -609,7 +634,7 @@ export default function App() {
               <input
                 id="circle-name"
                 className="text-input bordered"
-                placeholder="e.g. Sunday Brunch Crew"
+                placeholder="e.g. Day 1 Survival Club"
                 value={newCircle.name}
                 onChange={(e) => setNewCircle(c => ({ ...c, name: e.target.value }))}
                 onKeyDown={(e) => { if (e.key === 'Enter') createCircle(); }}
@@ -674,11 +699,12 @@ export default function App() {
               })
             )}
 
+            <h3 className="section-label">Your health</h3>
             <div className="sos-card">
               <AlertTriangle size={18} />
               <div>
-                <strong>Need help right now?</strong>
-                <p>In a real emergency, contact local emergency services. Sakhi's trusted-contact live location sharing is on our roadmap.</p>
+                <strong>Peer support ≠ medical advice</strong>
+                <p>Sakhi is sisters sharing experiences, and even our verified mentors can't examine you through a screen. Please see a doctor promptly if you have: pain that regularly makes you miss school/work, bleeding through a pad or tampon every hour, periods lasting more than 7 days, fainting or dizziness, or a sudden change in your cycle.</p>
               </div>
             </div>
           </div>
