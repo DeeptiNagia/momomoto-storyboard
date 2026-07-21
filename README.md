@@ -6,7 +6,7 @@ A messaging app prototype (think WhatsApp / Messenger) built as a safe, warm spa
 
 - **Onboarding pledge** — every member joins by agreeing to the community pledge (be kind, lift each other up).
 - **Chats** — 1:1 conversations with typing indicators, read receipts, unread badges, online status, and simulated replies so the flow is testable without a backend.
-- **Circles** — group spaces around shared interests (careers, new moms, book club, solo travel).
+- **Circles** — group chats around shared interests (careers, new moms, book club, solo travel). Chat inside any circle, or create your own with a name, emoji, and description — simulated members join in and reply.
 - **Safety center** — verified-members-only mode, disappearing messages, one-tap block (they're never told), report flow, and a blocked list you control.
 - **Profile & privacy** — edit your name/status, toggle read receipts and last seen, log out and wipe the device.
 
@@ -27,6 +27,5 @@ Other scripts: `npm run build` (production build), `npm run preview` (serve the 
 
 - Real backend (auth + verification flow, message sync, push notifications)
 - End-to-end encryption
-- Posting inside circles
 - Voice/video calls
 - Trusted-contact live location sharing

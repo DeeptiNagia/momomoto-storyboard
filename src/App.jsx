@@ -91,7 +91,31 @@ const seedCircles = [
   },
 ];
 
+// members + replies used to simulate life inside group chats
+const GROUP_MEMBERS = ['Priya Sharma', 'Ananya Iyer', 'Meera Kapoor', 'Ritu M.', 'Sneha P.', 'Dr. Farah Khan'];
+const GROUP_REPLIES = [
+  'Love this — so glad you posted 💜',
+  'Great question, following this thread 👀',
+  'Yes!! Was hoping someone would bring this up.',
+  "Count me in. DM'ing you!",
+  'Adding my thoughts tonight, but short answer: absolutely.',
+  'This circle is the best. Welcome!',
+];
+
+const CIRCLE_EMOJIS = ['💜', '💻', '🍼', '📚', '🧳', '🎨', '🏃‍♀️', '🌸', '🎬', '🍲'];
+
 const now = () => new Date().toISOString();
+
+// convert the seeded feeds into chat messages so circles are live group chats
+function seedCircleMsgs() {
+  const msgs = {};
+  for (const g of seedCircles) {
+    msgs[g.id] = g.feed.map((p, i) => ({
+      id: `${g.id}-seed-${i}`, author: p.author, text: p.text, at: now(),
+    }));
+  }
+  return msgs;
+}
 
 function seedMessages() {
   return {
@@ -114,7 +138,9 @@ const defaultState = {
   onboarded: false,
   profile: { name: '', vibe: 'Here to connect 💜' },
   settings: { readReceipts: true, lastSeen: true, verifiedOnly: false, disappearing: false },
-  messages: null, // seeded on first run
+  messages: null,   // seeded on first run
+  circleMsgs: null, // seeded on first run
+  myCircles: [],    // circles the user created
   blocked: [],
 };
 
@@ -123,10 +149,16 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...defaultState, ...parsed, messages: parsed.messages || seedMessages() };
+      return {
+        ...defaultState,
+        ...parsed,
+        messages: parsed.messages || seedMessages(),
+        circleMsgs: parsed.circleMsgs || seedCircleMsgs(),
+        myCircles: parsed.myCircles || [],
+      };
     }
   } catch { /* corrupted storage — start fresh */ }
-  return { ...defaultState, messages: seedMessages() };
+  return { ...defaultState, messages: seedMessages(), circleMsgs: seedCircleMsgs() };
 }
 
 const avatarColor = (name) => AVATAR_COLORS[(name || 'x').charCodeAt(0) % AVATAR_COLORS.length];
@@ -153,9 +185,12 @@ export default function App() {
   const [draft, setDraft] = useState('');
   const [search, setSearch] = useState('');
   const [typing, setTyping] = useState(false);
+  const [circleTyping, setCircleTyping] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [nameInput, setNameInput] = useState('');
+  const [showNewCircle, setShowNewCircle] = useState(false);
+  const [newCircle, setNewCircle] = useState({ name: '', about: '', emoji: '💜' });
   const scrollRef = useRef(null);
   const toastTimer = useRef(null);
 
@@ -166,7 +201,7 @@ export default function App() {
   // keep chat scrolled to the newest message
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [activeChat, state.messages, typing]);
+  }, [activeChat, activeCircle, state.messages, state.circleMsgs, typing, circleTyping]);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -181,7 +216,8 @@ export default function App() {
     [state.blocked, state.settings.verifiedOnly]);
 
   const contact = seedContacts.find(c => c.id === activeChat);
-  const circle = seedCircles.find(g => g.id === activeCircle);
+  const allCircles = useMemo(() => [...state.myCircles, ...seedCircles], [state.myCircles]);
+  const circle = allCircles.find(g => g.id === activeCircle);
 
   const lastMessage = (id) => {
     const msgs = state.messages[id] || [];
@@ -227,6 +263,60 @@ export default function App() {
     }, 2400);
   };
 
+  const sendCirclePost = () => {
+    const text = draft.trim();
+    if (!text || !circle) return;
+    const id = circle.id;
+    const post = { id: `cp-${Date.now()}`, author: 'me', text, at: now() };
+    setState(s => ({ ...s, circleMsgs: { ...s.circleMsgs, [id]: [...(s.circleMsgs[id] || []), post] } }));
+    setDraft('');
+
+    // simulate another member replying; in a brand-new circle, the first reply
+    // comes with a join notice so the space doesn't feel empty
+    const msgCount = (state.circleMsgs[id] || []).length;
+    const author = GROUP_MEMBERS[msgCount % GROUP_MEMBERS.length];
+    const isNewCircle = circle.mine && msgCount === 0;
+    setTimeout(() => setCircleTyping(author), 1200);
+    setTimeout(() => {
+      setCircleTyping('');
+      const text2 = isNewCircle
+        ? `Just joined — love that you started this circle! 🎉`
+        : GROUP_REPLIES[msgCount % GROUP_REPLIES.length];
+      const reply = { id: `cp-${Date.now()}-r`, author, text: text2, at: now() };
+      setState(s => ({
+        ...s,
+        circleMsgs: { ...s.circleMsgs, [id]: [...(s.circleMsgs[id] || []), reply] },
+        myCircles: isNewCircle
+          ? s.myCircles.map(g => g.id === id ? { ...g, members: g.members + 1 } : g)
+          : s.myCircles,
+      }));
+    }, 3000);
+  };
+
+  const createCircle = () => {
+    const name = newCircle.name.trim();
+    if (!name) return;
+    // eslint-disable-next-line react-hooks/purity -- event handler, not render
+    const id = `my-${Date.now()}`;
+    const g = {
+      id,
+      name,
+      emoji: newCircle.emoji,
+      about: newCircle.about.trim() || 'A brand-new circle. Say hello!',
+      members: 1,
+      mine: true,
+    };
+    setState(s => ({
+      ...s,
+      myCircles: [g, ...s.myCircles],
+      circleMsgs: { ...s.circleMsgs, [g.id]: [] },
+    }));
+    setShowNewCircle(false);
+    setNewCircle({ name: '', about: '', emoji: '💜' });
+    setActiveCircle(g.id);
+    showToast('Circle created! Post something to get it going 💜');
+  };
+
   const blockContact = (id) => {
     setState(s => ({ ...s, blocked: [...new Set([...s.blocked, id])] }));
     setActiveChat(null);
@@ -243,7 +333,7 @@ export default function App() {
   const resetApp = () => {
     if (!window.confirm('Log out and clear all local data on this device?')) return;
     localStorage.removeItem(STORAGE_KEY);
-    setState({ ...defaultState, messages: seedMessages() });
+    setState({ ...defaultState, messages: seedMessages(), circleMsgs: seedCircleMsgs() });
     setActiveChat(null); setActiveCircle(null); setTab('chats');
   };
 
@@ -360,33 +450,61 @@ export default function App() {
     );
   }
 
-  // ------------------------------ CIRCLE VIEW ------------------------------
+  // ------------------------------ CIRCLE VIEW (group chat) ------------------------------
   if (circle) {
+    const posts = state.circleMsgs[circle.id] || [];
     return (
       <div className="app">
         <header className="chat-header">
-          <button className="icon-btn" onClick={() => setActiveCircle(null)} aria-label="Back"><ChevronLeft size={22} /></button>
+          <button className="icon-btn" onClick={() => { setActiveCircle(null); setCircleTyping(''); }} aria-label="Back"><ChevronLeft size={22} /></button>
           <div className="circle-emoji">{circle.emoji}</div>
           <div className="chat-header-info">
-            <div className="chat-header-name">{circle.name}</div>
-            <div className="chat-header-status">{circle.members} members · {circle.about}</div>
+            <div className="chat-header-name">{circle.name}{circle.mine && <span className="mine-tag">your circle</span>}</div>
+            <div className="chat-header-status">
+              {circleTyping ? <span className="typing-text">{circleTyping} is typing…</span> : `${circle.members} member${circle.members === 1 ? '' : 's'} · ${circle.about}`}
+            </div>
           </div>
         </header>
-        <div className="messages">
-          <div className="chat-day-divider">Recent in this circle</div>
-          {circle.feed.map((post, i) => (
-            <div key={i} className="bubble-row">
-              <div className="bubble bubble-theirs circle-post">
-                <span className="post-author" style={{ color: avatarColor(post.author) }}>{post.author}</span>
-                <span className="bubble-text">{post.text}</span>
+        <div className="messages" ref={scrollRef}>
+          {posts.length === 0 ? (
+            <div className="empty-state">
+              {circle.mine
+                ? 'Your circle is live! Post the first message and watch it come alive.'
+                : 'No messages yet — start the conversation.'}
+            </div>
+          ) : (
+            <div className="chat-day-divider">Today</div>
+          )}
+          {posts.map(p => (
+            <div key={p.id} className={`bubble-row ${p.author === 'me' ? 'mine' : ''}`}>
+              <div className={`bubble circle-post ${p.author === 'me' ? 'bubble-mine' : 'bubble-theirs'}`}>
+                {p.author !== 'me' && (
+                  <span className="post-author" style={{ color: avatarColor(p.author) }}>{p.author}</span>
+                )}
+                <span className="bubble-text">{p.text}</span>
+                <span className="bubble-meta">{fmtTime(p.at)}</span>
               </div>
             </div>
           ))}
+          {circleTyping && (
+            <div className="bubble-row">
+              <div className="bubble bubble-theirs typing-bubble"><span /><span /><span /></div>
+            </div>
+          )}
         </div>
         <footer className="composer">
-          <input className="composer-input" placeholder="Posting in circles is coming soon…" disabled />
-          <button className="send-btn" disabled aria-label="Send"><Send size={18} /></button>
+          <input
+            className="composer-input"
+            placeholder={`Message ${circle.name}…`}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') sendCirclePost(); }}
+          />
+          <button className="send-btn" onClick={sendCirclePost} disabled={!draft.trim()} aria-label="Send">
+            <Send size={18} />
+          </button>
         </footer>
+        {toast && <div className="toast">{toast}</div>}
       </div>
     );
   }
@@ -447,17 +565,69 @@ export default function App() {
 
         {tab === 'circles' && (
           <div className="circle-list">
-            <p className="section-intro">Circles are group spaces built around what you care about. Join in, or just listen for a while.</p>
-            {seedCircles.map(g => (
-              <button key={g.id} className="circle-card" onClick={() => setActiveCircle(g.id)}>
-                <div className="circle-emoji lg">{g.emoji}</div>
-                <div className="circle-card-text">
-                  <div className="circle-card-name">{g.name}</div>
-                  <div className="circle-card-about">{g.about}</div>
-                  <div className="circle-card-members"><Users size={13} /> {g.members} members</div>
-                </div>
+            <p className="section-intro">Circles are group chats built around what you care about. Join one — or start your own.</p>
+            {allCircles.map(g => {
+              const posts = state.circleMsgs[g.id] || [];
+              const last = posts[posts.length - 1];
+              return (
+                <button key={g.id} className="circle-card" onClick={() => setActiveCircle(g.id)}>
+                  <div className="circle-emoji lg">{g.emoji}</div>
+                  <div className="circle-card-text">
+                    <div className="circle-card-name">{g.name}{g.mine && <span className="mine-tag">yours</span>}</div>
+                    <div className="circle-card-about">
+                      {last ? `${last.author === 'me' ? 'You' : last.author.split(' ')[0]}: ${last.text}` : g.about}
+                    </div>
+                    <div className="circle-card-members"><Users size={13} /> {g.members} member{g.members === 1 ? '' : 's'}</div>
+                  </div>
+                </button>
+              );
+            })}
+            <button className="fab" onClick={() => setShowNewCircle(true)} aria-label="Start a circle">
+              <Plus size={22} />
+            </button>
+          </div>
+        )}
+
+        {showNewCircle && (
+          <div className="modal-overlay" onClick={() => setShowNewCircle(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-head">
+                <h2>Start a circle</h2>
+                <button className="icon-btn" onClick={() => setShowNewCircle(false)} aria-label="Close"><X size={18} /></button>
+              </div>
+              <label className="field-label dark">Pick an emoji</label>
+              <div className="emoji-row">
+                {CIRCLE_EMOJIS.map(e => (
+                  <button
+                    key={e}
+                    className={`emoji-pick ${newCircle.emoji === e ? 'selected' : ''}`}
+                    onClick={() => setNewCircle(c => ({ ...c, emoji: e }))}
+                  >{e}</button>
+                ))}
+              </div>
+              <label className="field-label dark" htmlFor="circle-name">Circle name</label>
+              <input
+                id="circle-name"
+                className="text-input bordered"
+                placeholder="e.g. Sunday Brunch Crew"
+                value={newCircle.name}
+                onChange={(e) => setNewCircle(c => ({ ...c, name: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === 'Enter') createCircle(); }}
+                autoFocus
+              />
+              <label className="field-label dark" htmlFor="circle-about">What's it about? <span className="optional">(optional)</span></label>
+              <input
+                id="circle-about"
+                className="text-input bordered"
+                placeholder="One line so others know the vibe"
+                value={newCircle.about}
+                onChange={(e) => setNewCircle(c => ({ ...c, about: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === 'Enter') createCircle(); }}
+              />
+              <button className="btn-primary" disabled={!newCircle.name.trim()} onClick={createCircle}>
+                Create circle <Sparkles size={16} />
               </button>
-            ))}
+            </div>
           </div>
         )}
 
