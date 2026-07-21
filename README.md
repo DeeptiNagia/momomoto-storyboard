@@ -6,8 +6,10 @@ A messaging app prototype (think WhatsApp / Messenger) built as a safe, shame-fr
 
 - **Onboarding pledge** — every member joins by agreeing to the community pledge: zero shame, zero taboo.
 - **Chats** — 1:1 conversations with typing indicators, read receipts, unread badges, online status, and simulated replies. Seed contacts include friends who get it and a verified gynaecologist mentor.
-- **Circles** — group chats for every part of the cycle: Cramps & Pain Relief, PCOS Support, Endo Warriors, First Periods & Teens, and Cycle, Mood & Sleep. Chat inside any circle, or create your own with a name, emoji, and description — simulated members join in and reply.
-- **Anonymous posting** — a one-tap toggle in any circle lets you ask sensitive questions as "A sister" instead of your name.
+- **Circles** — group chats for every part of the cycle: Cramps & Pain Relief, PCOS Support, Endo Warriors, First Periods & Teens, and Cycle, Mood & Sleep. Create your own with a name, emoji, and description — simulated members join in and reply.
+- **Voices** — each circle has up to 10 "voices" who can post; everyone else views and likes. Claim an open seat where one's available. This keeps large circles readable, kind, and easy to moderate — and works naturally offline, since most members are readers.
+- **Likes** — heart any post; counts persist.
+- **Anonymous posting** — a one-tap toggle lets voices ask sensitive questions as "A sister" instead of their name.
 - **Safety center** — verified-members-only mode, disappearing messages, one-tap block (they're never told), report flow, a blocked list, and a clear "peer support ≠ medical advice" card listing symptoms that deserve a doctor's visit.
 - **Profile & privacy** — edit your name/status, toggle read receipts and last seen, log out and wipe the device.
 

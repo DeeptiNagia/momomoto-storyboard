@@ -242,6 +242,40 @@ input { font-family: inherit; }
 .circle-post { max-width: 92%; gap: 3px; }
 .post-author { font-size: 12px; font-weight: 700; }
 
+.bubble-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.like-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 11px;
+  font-size: 11.5px; font-weight: 700;
+  color: var(--dim); background: rgba(0, 0, 0, 0.04);
+  transition: all 0.15s;
+}
+.like-btn:hover { color: var(--rose); }
+.like-btn.liked { color: var(--rose); background: var(--rose-soft); }
+
+.viewer-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 13px 16px calc(13px + env(safe-area-inset-bottom));
+  background: var(--white); border-top: 1px solid var(--line);
+}
+.viewer-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.viewer-text strong { font-size: 13px; color: var(--plum); display: inline-flex; align-items: center; gap: 5px; }
+.viewer-text span { font-size: 11.5px; color: var(--dim); line-height: 1.35; }
+.join-voice-btn {
+  flex-shrink: 0; padding: 11px 18px; border-radius: 12px;
+  background: var(--plum); color: var(--white);
+  font-size: 12.5px; font-weight: 700;
+}
+.join-voice-btn:hover { background: var(--plum-deep); }
+
+.voices-pill {
+  margin-left: 8px; padding: 2px 8px; border-radius: 8px;
+  font-size: 10.5px; font-weight: 700;
+  background: rgba(0, 0, 0, 0.05); color: var(--dim);
+}
+.voices-pill.open { background: #e8f6ec; color: #1e7a3c; }
+.voices-pill.active { background: var(--rose-soft); color: var(--plum); }
+
 /* ------------------------------ composer ------------------------------ */
 .composer {
   display: flex; align-items: center; gap: 10px;

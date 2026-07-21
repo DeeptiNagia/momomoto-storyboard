@@ -57,9 +57,13 @@ const seedContacts = [
   },
 ];
 
+// Each circle has up to MAX_VOICES members who can post ("voices");
+// everyone else views and likes. Keeps big circles readable and safe.
+const MAX_VOICES = 10;
+
 const seedCircles = [
   {
-    id: 'g1', name: 'Cramps & Pain Relief', members: 214, emoji: '🔥',
+    id: 'g1', name: 'Cramps & Pain Relief', members: 214, emoji: '🔥', voicesTaken: 10,
     about: 'What actually helps — remedies, hacks, solidarity.',
     feed: [
       { author: 'Priya Sharma', text: 'Ranking my pain relief: 1) heat pad 2) mild walk (annoyingly, it works) 3) ginger-ajwain tea. What\'s yours?' },
@@ -68,7 +72,7 @@ const seedCircles = [
     ],
   },
   {
-    id: 'g2', name: 'PCOS Support', members: 156, emoji: '🎗️',
+    id: 'g2', name: 'PCOS Support', members: 156, emoji: '🎗️', voicesTaken: 10,
     about: 'Irregular cycles, diagnosis stories, living with PCOS.',
     feed: [
       { author: 'Dr. Farah Khan', text: 'Reminder: our free PCOS Q&A call is this Saturday at 11am. Bring every question, nothing is too small.' },
@@ -76,21 +80,21 @@ const seedCircles = [
     ],
   },
   {
-    id: 'g3', name: 'Endo Warriors', members: 98, emoji: '💛',
+    id: 'g3', name: 'Endo Warriors', members: 98, emoji: '💛', voicesTaken: 9,
     about: 'Endometriosis — getting heard, getting diagnosed, coping.',
     feed: [
       { author: 'Ananya Iyer', text: 'If a doctor says "period pain is just like that" and you\'re missing work every month — get a second opinion. That sentence delayed my diagnosis by 4 years.' },
     ],
   },
   {
-    id: 'g4', name: 'First Periods & Teens', members: 67, emoji: '🌸',
+    id: 'g4', name: 'First Periods & Teens', members: 67, emoji: '🌸', voicesTaken: 8,
     about: 'A gentle space for firsts. No question is silly here.',
     feed: [
       { author: 'Meera Kapoor', text: 'Starting a thread of things we wish someone had told us at 13. Mine: irregular cycles in the first couple of years are completely normal.' },
     ],
   },
   {
-    id: 'g5', name: 'Cycle, Mood & Sleep', members: 132, emoji: '🌙',
+    id: 'g5', name: 'Cycle, Mood & Sleep', members: 132, emoji: '🌙', voicesTaken: 10,
     about: 'PMS, PMDD, energy dips — tracking the whole cycle.',
     feed: [
       { author: 'Ritu M.', text: 'Started tracking mood alongside my cycle and WOW the week-before pattern is real. Anyone else rage-cry at nothing on day 24? 😅' },
@@ -119,6 +123,7 @@ function seedCircleMsgs() {
   for (const g of seedCircles) {
     msgs[g.id] = g.feed.map((p, i) => ({
       id: `${g.id}-seed-${i}`, author: p.author, text: p.text, at: now(),
+      likes: ((i * 17 + g.members) % 38) + 4, liked: false,
     }));
   }
   return msgs;
@@ -148,6 +153,7 @@ const defaultState = {
   messages: null,   // seeded on first run
   circleMsgs: null, // seeded on first run
   myCircles: [],    // circles the user created
+  joinedVoices: [], // circle ids where the user claimed a voice seat
   blocked: [],
 };
 
@@ -162,6 +168,7 @@ function loadState() {
         messages: parsed.messages || seedMessages(),
         circleMsgs: parsed.circleMsgs || seedCircleMsgs(),
         myCircles: parsed.myCircles || [],
+        joinedVoices: parsed.joinedVoices || [],
       };
     }
   } catch { /* corrupted storage — start fresh */ }
@@ -271,11 +278,36 @@ export default function App() {
     }, 2400);
   };
 
+  // voices: the up-to-10 members who can post in a circle; everyone else views and likes
+  const isVoice = (g) => g.mine || state.joinedVoices.includes(g.id);
+  const voicesUsed = (g) => (g.voicesTaken || 1) + (state.joinedVoices.includes(g.id) ? 1 : 0);
+
+  const joinVoice = (g) => {
+    if (voicesUsed(g) >= MAX_VOICES) return;
+    setState(s => ({ ...s, joinedVoices: [...new Set([...s.joinedVoices, g.id])] }));
+    showToast('You have a voice seat now — say hello 💜');
+  };
+
+  const toggleLike = (circleId, postId) => {
+    setState(s => ({
+      ...s,
+      circleMsgs: {
+        ...s.circleMsgs,
+        [circleId]: s.circleMsgs[circleId].map(p =>
+          p.id === postId
+            ? { ...p, liked: !p.liked, likes: (p.likes || 0) + (p.liked ? -1 : 1) }
+            : p
+        ),
+      },
+    }));
+  };
+
   const sendCirclePost = () => {
     const text = draft.trim();
-    if (!text || !circle) return;
+    if (!text || !circle || !isVoice(circle)) return;
     const id = circle.id;
-    const post = { id: `cp-${Date.now()}`, author: 'me', anon: anonPost, text, at: now() };
+    // eslint-disable-next-line react-hooks/purity -- event handler, not render
+    const post = { id: `cp-${Date.now()}`, author: 'me', anon: anonPost, text, at: now(), likes: 0, liked: false };
     setState(s => ({ ...s, circleMsgs: { ...s.circleMsgs, [id]: [...(s.circleMsgs[id] || []), post] } }));
     setDraft('');
 
@@ -290,7 +322,7 @@ export default function App() {
       const text2 = isNewCircle
         ? `Just joined — love that you started this circle! 🎉`
         : GROUP_REPLIES[msgCount % GROUP_REPLIES.length];
-      const reply = { id: `cp-${Date.now()}-r`, author, text: text2, at: now() };
+      const reply = { id: `cp-${Date.now()}-r`, author, text: text2, at: now(), likes: 0, liked: false };
       setState(s => ({
         ...s,
         circleMsgs: { ...s.circleMsgs, [id]: [...(s.circleMsgs[id] || []), reply] },
@@ -312,6 +344,7 @@ export default function App() {
       emoji: newCircle.emoji,
       about: newCircle.about.trim() || 'A brand-new circle. Say hello!',
       members: 1,
+      voicesTaken: 1, // the creator holds the first voice seat
       mine: true,
     };
     setState(s => ({
@@ -470,7 +503,9 @@ export default function App() {
           <div className="chat-header-info">
             <div className="chat-header-name">{circle.name}{circle.mine && <span className="mine-tag">your circle</span>}</div>
             <div className="chat-header-status">
-              {circleTyping ? <span className="typing-text">{circleTyping} is typing…</span> : `${circle.members} member${circle.members === 1 ? '' : 's'} · ${circle.about}`}
+              {circleTyping
+                ? <span className="typing-text">{circleTyping} is typing…</span>
+                : `${circle.members} member${circle.members === 1 ? '' : 's'} · ${voicesUsed(circle)}/${MAX_VOICES} voices${isVoice(circle) ? ' · you\'re a voice' : ''}`}
             </div>
           </div>
         </header>
@@ -494,7 +529,17 @@ export default function App() {
                   <span className="anon-label"><EyeOff size={11} /> posted anonymously — others see "A sister"</span>
                 )}
                 <span className="bubble-text">{p.text}</span>
-                <span className="bubble-meta">{fmtTime(p.at)}</span>
+                <div className="bubble-foot">
+                  <button
+                    className={`like-btn ${p.liked ? 'liked' : ''}`}
+                    onClick={() => toggleLike(circle.id, p.id)}
+                    aria-label={p.liked ? 'Unlike' : 'Like'}
+                  >
+                    <Heart size={13} fill={p.liked ? 'currentColor' : 'none'} />
+                    {(p.likes || 0) > 0 && <span>{p.likes}</span>}
+                  </button>
+                  <span className="bubble-meta">{fmtTime(p.at)}</span>
+                </div>
               </div>
             </div>
           ))}
@@ -504,31 +549,50 @@ export default function App() {
             </div>
           )}
         </div>
-        <footer className="composer-stack">
-          {anonPost && (
-            <div className="anon-banner"><EyeOff size={13} /> Anonymous mode — this message will show as "A sister"</div>
-          )}
-          <div className="composer">
-            <button
-              className={`anon-toggle ${anonPost ? 'on' : ''}`}
-              onClick={() => setAnonPost(a => !a)}
-              aria-label="Toggle anonymous posting"
-              title="Post anonymously"
-            >
-              <EyeOff size={17} />
+        {isVoice(circle) ? (
+          <footer className="composer-stack">
+            {anonPost && (
+              <div className="anon-banner"><EyeOff size={13} /> Anonymous mode — this message will show as "A sister"</div>
+            )}
+            <div className="composer">
+              <button
+                className={`anon-toggle ${anonPost ? 'on' : ''}`}
+                onClick={() => setAnonPost(a => !a)}
+                aria-label="Toggle anonymous posting"
+                title="Post anonymously"
+              >
+                <EyeOff size={17} />
+              </button>
+              <input
+                className="composer-input"
+                placeholder={anonPost ? 'Ask anonymously…' : `Message ${circle.name}…`}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') sendCirclePost(); }}
+              />
+              <button className="send-btn" onClick={sendCirclePost} disabled={!draft.trim()} aria-label="Send">
+                <Send size={18} />
+              </button>
+            </div>
+          </footer>
+        ) : voicesUsed(circle) < MAX_VOICES ? (
+          <footer className="viewer-bar">
+            <div className="viewer-text">
+              <strong>{MAX_VOICES - voicesUsed(circle)} voice seat{MAX_VOICES - voicesUsed(circle) === 1 ? '' : 's'} open</strong>
+              <span>Voices can post — everyone else reads and likes.</span>
+            </div>
+            <button className="join-voice-btn" onClick={() => joinVoice(circle)}>
+              Join as a voice
             </button>
-            <input
-              className="composer-input"
-              placeholder={anonPost ? 'Ask anonymously…' : `Message ${circle.name}…`}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') sendCirclePost(); }}
-            />
-            <button className="send-btn" onClick={sendCirclePost} disabled={!draft.trim()} aria-label="Send">
-              <Send size={18} />
-            </button>
-          </div>
-        </footer>
+          </footer>
+        ) : (
+          <footer className="viewer-bar full">
+            <div className="viewer-text">
+              <strong>Viewing mode <Heart size={12} fill="currentColor" /></strong>
+              <span>All {MAX_VOICES} voice seats are taken — you can read and like posts. Seats open as voices rotate.</span>
+            </div>
+          </footer>
+        )}
         {toast && <div className="toast">{toast}</div>}
       </div>
     );
@@ -590,7 +654,7 @@ export default function App() {
 
         {tab === 'circles' && (
           <div className="circle-list">
-            <p className="section-intro">Circles are group chats for every part of the cycle — pain, PCOS, endo, firsts, moods. Ask with your name or anonymously. Join one, or start your own.</p>
+            <p className="section-intro">Circles are group chats for every part of the cycle. Each has up to {MAX_VOICES} <strong>voices</strong> who can post — everyone else reads and likes, so big circles stay kind and readable. Grab an open seat, or start your own circle.</p>
             {allCircles.map(g => {
               const posts = state.circleMsgs[g.id] || [];
               const last = posts[posts.length - 1];
@@ -602,7 +666,12 @@ export default function App() {
                     <div className="circle-card-about">
                       {last ? `${last.author === 'me' ? 'You' : last.author.split(' ')[0]}: ${last.text}` : g.about}
                     </div>
-                    <div className="circle-card-members"><Users size={13} /> {g.members} member{g.members === 1 ? '' : 's'}</div>
+                    <div className="circle-card-members">
+                      <Users size={13} /> {g.members} member{g.members === 1 ? '' : 's'}
+                      <span className={`voices-pill ${isVoice(g) ? 'active' : voicesUsed(g) < MAX_VOICES ? 'open' : ''}`}>
+                        {isVoice(g) ? '🎙 you\'re a voice' : voicesUsed(g) < MAX_VOICES ? `${MAX_VOICES - voicesUsed(g)} seat${MAX_VOICES - voicesUsed(g) === 1 ? '' : 's'} open` : `${MAX_VOICES}/${MAX_VOICES} voices`}
+                      </span>
+                    </div>
                   </div>
                 </button>
               );
